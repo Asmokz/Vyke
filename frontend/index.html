@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VYKE // IDE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ════ TOOLBAR ════════════════════════════════════════════════════════ -->
+  <header id="toolbar">
+    <div id="logo">
+      <span class="logo-bracket">[</span>VYKE<span class="logo-bracket">]</span>
+    </div>
+
+    <div id="toolbar-left">
+      <button class="tb-btn" id="btn-toggle-sidebar" title="Explorateur (Ctrl+B)">▐▌</button>
+      <div class="tb-divider"></div>
+      <button class="tb-btn" id="btn-save"     title="Sauvegarder (Ctrl+S)">SAVE</button>
+      <button class="tb-btn" id="btn-complete" title="Complétion IA (Ctrl+Space)">▶ AI</button>
+      <button class="tb-btn" id="btn-run"      title="Exécuter (F5)">▶ RUN</button>
+    </div>
+
+    <div id="toolbar-center">
+      <span id="current-filename">untitled.py</span>
+      <span id="file-dirty" class="hidden">●</span>
+    </div>
+
+    <div id="toolbar-right">
+      <label class="tb-label">LANG</label>
+      <select id="lang-select" class="tb-select">
+        <option value="python">Python</option>
+        <option value="javascript">JavaScript</option>
+        <option value="typescript">TypeScript</option>
+        <option value="markdown">Markdown</option>
+        <option value="json">JSON</option>
+        <option value="bash">Bash</option>
+        <option value="html">HTML</option>
+        <option value="css">CSS</option>
+        <option value="plaintext">Plain Text</option>
+      </select>
+
+      <button class="tb-btn model-picker-btn" id="btn-model-picker" title="Choisir les modèles Ollama">
+        <span class="model-picker-icon">◈</span>
+        <span id="tb-model-label">
+          <span class="model-row"><span class="model-role">CODE</span><span id="tb-code-name">—</span></span>
+          <span class="model-row"><span class="model-role">CHAT</span><span id="tb-chat-name">—</span></span>
+        </span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ════ MODALS ══════════════════════════════════════════════════════════ -->
+
+  <!-- Modal sélection de modèles -->
+  <div id="modal-models-overlay" class="hidden">
+    <div id="modal-models">
+      <div id="modal-models-header">
+        <span>◈ SÉLECTION DES MODÈLES OLLAMA</span>
+        <button id="btn-close-models">✕</button>
+      </div>
+      <div id="modal-models-body">
+        <div id="model-ollama-status">
+          <span class="model-status-dot" id="model-status-dot">●</span>
+          <span id="model-status-text">Connexion à Ollama…</span>
+          <button class="model-refresh-btn" id="btn-refresh-models">↻ REFRESH</button>
+        </div>
+        <div class="model-section">
+          <div class="model-section-label">
+            <span class="model-section-icon">💬</span>
+            MODÈLE CHAT
+            <span class="model-section-sub">Questions, génération, explications</span>
+          </div>
+          <div id="model-chat-list" class="model-list"></div>
+        </div>
+        <div class="model-section">
+          <div class="model-section-label">
+            <span class="model-section-icon">⚡</span>
+            MODÈLE COMPLÉTION
+            <span class="model-section-sub">Auto-complétion et suggestions de code</span>
+          </div>
+          <div id="model-code-list" class="model-list"></div>
+        </div>
+      </div>
+      <div id="modal-models-footer">
+        <span id="model-footer-info">Sélectionne un modèle dans chaque catégorie</span>
+        <button id="btn-apply-models">APPLIQUER</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal gestionnaire de fichiers projects/ -->
+  <div id="modal-overlay" class="hidden">
+    <div id="modal-files">
+      <div id="modal-header">
+        <span>◈ GESTIONNAIRE DE FICHIERS</span>
+        <button id="btn-close-modal">✕</button>
+      </div>
+      <div id="file-list-container">
+        <div id="file-list-empty" class="hidden"><span>Aucun fichier sauvegardé.</span></div>
+        <ul id="file-list"></ul>
+      </div>
+      <div id="modal-footer">
+        <span id="file-count">0 fichier(s)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal navigateur de dossiers (Open Project) -->
+  <div id="modal-browse-overlay" class="hidden">
+    <div id="modal-browse">
+      <div id="modal-browse-header">
+        <span>📂 OUVRIR UN DOSSIER</span>
+        <button id="btn-close-browse">✕</button>
+      </div>
+      <div id="modal-browse-breadcrumb"></div>
+      <div id="modal-browse-list"></div>
+      <div id="modal-browse-footer">
+        <span id="modal-browse-current-path"></span>
+        <button id="btn-select-folder">OUVRIR CE DOSSIER</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="hidden"></div>
+
+  <!-- ════ MAIN ════════════════════════════════════════════════════════════ -->
+  <main id="main">
+
+    <!-- ── Sidebar ───────────────────────────────────────────────────────── -->
+    <aside id="sidebar">
+      <div id="sidebar-header">
+        <span class="sidebar-title-text">EXPLORER</span>
+        <button id="btn-sidebar-close" title="Réduire (Ctrl+B)">◀</button>
+      </div>
+
+      <div id="sidebar-project-bar">
+        <span id="sidebar-project-name" title="">PROJECTS</span>
+        <div id="sidebar-project-actions">
+          <button class="sidebar-action-btn" id="btn-sidebar-new"          title="Nouveau fichier">+</button>
+          <button class="sidebar-action-btn" id="btn-sidebar-open-project" title="Ouvrir un dossier projet">📂</button>
+        </div>
+      </div>
+
+      <div id="sidebar-tree"></div>
+
+      <div id="sidebar-footer">
+        <span id="sidebar-workspace-label">workspace</span>
+      </div>
+    </aside>
+
+    <!-- Poignée de redimensionnement -->
+    <div id="sidebar-resize-handle"></div>
+
+    <!-- ── Éditeur ──────────────────────────────────────────────────────── -->
+    <section id="editor-panel">
+      <div id="editor-tabs-bar">
+        <div id="tabs-list"></div>
+        <button id="btn-new-tab" title="Nouveau fichier (Ctrl+N)">+</button>
+        <div id="tab-spacer"></div>
+        <span id="cursor-info">Ln 1, Col 1</span>
+      </div>
+      <div id="editor"></div>
+
+      <!-- Terminal intégré -->
+      <div id="terminal-panel" class="hidden">
+        <div id="terminal-header">
+          <div id="terminal-title-group">
+            <span id="terminal-run-dot">●</span>
+            <span class="terminal-title-text">TERMINAL</span>
+            <span id="terminal-lang-badge">python3</span>
+          </div>
+          <div id="terminal-header-actions">
+            <span id="terminal-elapsed" class="hidden"></span>
+            <span id="terminal-exit-badge" class="hidden"></span>
+            <button id="btn-toggle-stdin" title="Afficher / masquer le stdin">STDIN</button>
+            <button id="btn-terminal-clear" title="Effacer">CLR</button>
+            <button id="btn-terminal-resize" title="Agrandir / réduire">⇕</button>
+            <button id="btn-terminal-close" title="Fermer">✕</button>
+          </div>
+        </div>
+        <!-- Zone stdin pré-fourni -->
+        <div id="stdin-panel" class="hidden">
+          <div id="stdin-label">
+            <span>▶ STDIN</span>
+            <span id="stdin-hint">Lignes lues par <code>input()</code> — une par ligne</span>
+          </div>
+          <textarea id="stdin-input" placeholder="Ligne 1&#10;Ligne 2&#10;…" rows="3" spellcheck="false"></textarea>
+        </div>
+        <div id="terminal-output"></div>
+      </div>
+
+      <!-- Panneau de complétion IA -->
+      <div id="completion-panel" class="hidden">
+        <div id="completion-header">
+          <span class="completion-title">◈ VYKE SUGGESTION</span>
+          <div class="completion-actions">
+            <button id="btn-accept-completion">ACCEPT [Tab]</button>
+            <button id="btn-reject-completion">REJECT [Esc]</button>
+          </div>
+        </div>
+        <div id="completion-loading" class="hidden"><span class="blink">▮</span> Vyke réfléchit…</div>
+        <pre id="completion-content"></pre>
+      </div>
+    </section>
+
+    <!-- ── Chat ─────────────────────────────────────────────────────────── -->
+    <section id="chat-panel">
+      <div id="chat-header">
+        <div id="chat-logo">
+          <span class="chat-logo-pixel">V</span><span class="chat-logo-pixel">Y</span><span class="chat-logo-pixel">K</span><span class="chat-logo-pixel">E</span>
+          <span class="chat-logo-sub">.CHAT</span>
+        </div>
+        <div id="chat-header-right">
+          <button class="chat-ctrl-btn" id="btn-inject-code" title="Injecter le code dans le chat">&lt;/&gt;</button>
+          <button class="chat-ctrl-btn" id="btn-clear-chat" title="Effacer le chat">CLR</button>
+        </div>
+      </div>
+
+      <!-- Barre de contexte IDE -->
+      <div id="chat-context-strip">
+        <span id="ctx-icon">📄</span>
+        <span id="ctx-filename">untitled.py</span>
+        <span class="ctx-sep">·</span>
+        <span id="ctx-lang">python</span>
+        <span class="ctx-sep">·</span>
+        <span id="ctx-lines">0 ligne</span>
+        <span id="ctx-spacer"></span>
+        <button id="btn-toggle-context" class="ctx-toggle active" title="Activer / désactiver le contexte code">
+          <span class="ctx-dot">●</span> CONTEXTE
+        </button>
+      </div>
+
+      <div id="chat-messages">
+        <div class="chat-msg vyke-msg">
+          <span class="msg-prefix vyke-prefix">[VYKE]</span>
+          <span class="msg-content">Initialisation… Prêt. Je suis Vyke, ton assistant de code. J'ai accès en temps réel au fichier ouvert dans l'IDE.</span>
+        </div>
+      </div>
+
+      <div id="chat-input-area">
+        <span class="prompt-sym">&gt;_</span>
+        <textarea id="chat-input" placeholder="Demande à Vyke… (Enter pour envoyer, Shift+Enter pour nouvelle ligne)" rows="2"></textarea>
+        <button id="btn-send" title="Envoyer (Enter)">▶</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ════ STATUS BAR ══════════════════════════════════════════════════════ -->
+  <footer id="statusbar">
+    <span id="status-ollama" class="status-indicator offline">
+      <span class="status-dot">●</span> OLLAMA
+    </span>
+    <span class="status-sep">│</span>
+    <span id="status-lang">Python</span>
+    <span class="status-sep">│</span>
+    <span id="status-cursor">Ln 1, Col 1</span>
+    <span class="status-sep">│</span>
+    <span id="status-encoding">UTF-8</span>
+    <span class="status-spacer"></span>
+    <span id="status-msg"></span>
+    <span class="status-sep">│</span>
+    <span id="status-model-info">—</span>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

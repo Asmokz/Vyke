@@ -1,0 +1,23 @@
+# Python
+backend/venv/
+backend/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+*.egg-info/
+
+# Environment — never commit secrets
+.env
+
+# User data
+projects/*
+!projects/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp

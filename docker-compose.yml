@@ -1,0 +1,20 @@
+services:
+  vyke:
+    build: .
+    ports:
+      - "${VYKE_PORT:-4242}:4242"
+    environment:
+      - VYKE_PORT=4242
+      - VYKE_OLLAMA_URL=${VYKE_OLLAMA_URL:-http://host.docker.internal:11434}
+      - VYKE_CHAT_MODEL=${VYKE_CHAT_MODEL:-mistral-small3.2:24b}
+      - VYKE_CODE_MODEL=${VYKE_CODE_MODEL:-qwen2.5-coder:7b}
+      - VYKE_WORKSPACE=/workspace
+    volumes:
+      # Saved projects persist across restarts
+      - ./projects:/app/projects
+      # Mount your local workspace folder (set WORKSPACE_PATH in .env)
+      - ${WORKSPACE_PATH:-~}:/workspace
+    extra_hosts:
+      # Required on Linux so the container can reach Ollama on the host
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
