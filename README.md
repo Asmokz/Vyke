@@ -41,7 +41,7 @@ ollama pull qwen2.5-coder:7b       # code completion
 ### Option A — Docker (recommended)
 
 ```bash
-git clone https://github.com/your-username/vyke-editor.git
+git clone https://github.com/Asmokz/vyke-editor.git
 cd vyke-editor
 
 # Configure (copy and edit)
@@ -61,7 +61,7 @@ Open [http://localhost:4242](http://localhost:4242)
 ### Option B — Native (Python venv)
 
 ```bash
-git clone https://github.com/your-username/vyke-editor.git
+git clone https://github.com/Asmokz/vyke-editor.git
 cd vyke-editor
 
 ./setup.sh   # interactive wizard: port, Ollama URL, models
@@ -142,7 +142,7 @@ Browser
 ## Issues & Contributing
 
 Found a bug or have a feature request?  
-**[Open an issue on GitHub](https://github.com/your-username/vyke-editor/issues)** — all feedback is welcome.
+**[Open an issue on GitHub](https://github.com/Asmokz/vyke-editor/issues)** — all feedback is welcome.
 
 When reporting a bug, please include:
 - Your OS and browser version
